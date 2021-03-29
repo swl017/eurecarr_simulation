@@ -15,9 +15,9 @@ Reference: http://wiki.ros.org/melodic/Installation/Ubuntu
 Using scripts located at `etc/` of this repository, depending on you Ubuntu version, run
 
 - Ubuntu 18.04
->> `sudo chmod 755 ./install_ros_melodic && bash ./install_ros_melodic.sh`
+> `sudo chmod 755 ./install_ros_melodic && bash ./install_ros_melodic.sh`
 - Ubuntu 16.04
->> `sudo chmod 755 ./install_ros_kinetic && bash ./install_ros_kinetic.sh`
+> `sudo chmod 755 ./install_ros_kinetic && bash ./install_ros_kinetic.sh`
 
 Note, aliases are setup in your `~/.bashrc`.\
 To edit, run `gedit ~/.bashrc`.
@@ -57,7 +57,7 @@ Then, in another terminal, run the node.
 rosrun eurecarr_simulation simulate_dynamics.py
 ```
 
-> If the terminal cannot auto-complete the package> (`eurecarr_simulation`), run the following and try again.
+> If the terminal cannot auto-complete the package (`eurecarr_simulation`), run the following and try again.
 > ```
 > cd ~/catkin_ws
 > rospack profile
