@@ -57,23 +57,23 @@ Then, in another terminal, run the node.
 rosrun eurecarr_simulation simulate_dynamics.py
 ```
 
-If the terminal cannot auto-complete the package(`eurecarr_simulation`), run the following and try again.
-```
-cd ~/catkin_ws
-rospack profile
-```
+> If the terminal cannot auto-complete the package> (`eurecarr_simulation`), run the following and try again.
+> ```
+> cd ~/catkin_ws
+> rospack profile
+> ```
 
 If everything is successfull, you should see the following.
 - ROS node rviz
->> The vehicle is moved because of the initial speed in x direction.\
->> ![rviz](.etc/dynamics_sim_rviz.png)
+> The vehicle is moved because of the initial speed in x direction.\
+> ![rviz](etc/dynamics_sim_rviz.png)
 
 - ROS node graph
->> Run the following command
->> ```
->> rqt_graph
->> ```
->> ![rqt_graph](.etc/dynamics_sim_rqt_graph.png)
+> Run the following command
+> ```
+> rqt_graph
+> ```
+> ![rqt_graph](etc/dynamics_sim_rqt_graph.png)
 
 Publish control(steering and throttle) value to `/control` topic to test your own self-driving algorithms.
 
@@ -85,3 +85,11 @@ The following applies to `controlSubCallback` in `script/simulate_dynamics.py`
 | `msg.drive.acceleration`   | throttle level | - |
 | `self.inputs[0]`           | normalized steer input(min:-1, max:1) | - |
 | `self.inputs[1]`           | normalized throttle input(min:-1, max:1) | - |
+
+## Note
+
+- Parameters are located at `__init__` of `SimulateStep` class and `main` in `script/simulate_dynamics.py` to try out different settings.
+
+- The topics `simulation/bodyOdom` and `simulation/poseOdom` are different that the former puts velocities in the body frame and the latter puts velocities in the map frame.
+
+- Change the code freely to fit your needs.
