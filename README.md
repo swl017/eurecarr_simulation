@@ -30,7 +30,7 @@ cd ~/catkin_ws/src
 git clone https://github.com/swl017/eurecarr_simulation.git
 ```
 
-Finally, run the following command to install ROS dependencies.
+Run the following command to install all ROS dependencies for the `src/` directory.
 ```
 cd ~/catkin_ws
 rosdep install --from-paths src --ignore-src -r -y
@@ -47,12 +47,12 @@ Note, ROS runs with `python 2.x`
 
 ## Running the Simulator
 
-First, open a terminal and launch visualization.
+Open a terminal and launch visualization.
 ```
 roslaunch eurecarr_simulation simVis.launch
 ```
 
-Then, in another terminal, run the node.
+In another terminal, run the node.
 ```
 rosrun eurecarr_simulation simulate_dynamics.py
 ```
