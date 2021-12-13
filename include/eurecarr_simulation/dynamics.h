@@ -18,16 +18,22 @@ class Dynamics
 {
 public:
 
-    Dynamics(const double& dt, const ModelType& model_type);
+    Dynamics(const double& dt, const int& model_type, const int& RK4_dt_mult);
+    Dynamics(const double& dt, const int& model_type, const int& RK4_dt_mult, const States& initial_states, const Inputs& initial_inputs);
     ~Dynamics();
-    void init(const double& dt, const ModelType& model_type);
-    void forward(const States& states, const Inputs& inputs, States& states_der);
-
+    void init(const double& dt, const int& model_type, const int& RK4_dt_mult, const States& initial_states, const Inputs& initial_inputs);
+    void rollout(const States& states, const Inputs& inputs, const double& sim_time, States& next_states);
+    void getStatesDerivatives(const States& states, const Inputs& inputs, States& states_der);
+    void getNextState(const States& states, const Inputs& inputs, States& next_states);
+    void EulerMethod(const States& states, const Inputs& inputs, States& next_states);
+    void RK4(const States& states, const Inputs& inputs, States& next_states);
+    double getdt();
 
 private:
 
     double dt_;
-    ModelType model_type_;
+    int model_type_;
+    int RK4_dt_mult_;
     States last_states_;
     Inputs last_inputs_;
 

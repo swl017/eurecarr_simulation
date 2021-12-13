@@ -11,27 +11,83 @@
 
 namespace eurecarr {
 
-Dynamics::Dynamics(const double& dt, const ModelType& model_type) :
-dt_(dt),
-model_type_(model_type)
+/**
+ * @brief zero state zero input initialize
+ * @param dt The time from current state to next state
+ * @param model_type SIMPLE_BICYCLE_MODEL = 1, DYNAMIC_BICYCLE_MODEL = 2
+ * @param RK4_dt_mult <= 0: Euler method(fast), >= 1: fine_dt = dt / RK4_dt_mult (Runge-Kutta 4th Order Integration Method)
+ */
+Dynamics::Dynamics(const double& dt, const int& model_type, const int& RK4_dt_mult)
 {
-    init(dt, model_type);
+    States initial_states;
+    Inputs initial_inputs;
+    initial_states.setZero();
+    initial_inputs.setZero();
+    init(dt, model_type, RK4_dt_mult, initial_states, initial_inputs);
     std::cout << "Dynamics class initialized" << std::endl;
 }
 
-void Dynamics::init(const double& dt, const ModelType& model_type)
+/**
+ * @brief non-zero state non-zero input initialize
+ * @param dt The time from current state to next state
+ * @param model_type SIMPLE_BICYCLE_MODEL = 1, DYNAMIC_BICYCLE_MODEL = 2
+ * @param RK4_dt_mult <= 0: Euler method(fast), >= 1: fine_dt = dt / RK4_dt_mult (Runge-Kutta 4th Order Integration Method)
+ * @param initial_states x, y, yaw, xdot, ydot, ux, uy, yawdot
+ * @param initial_inputs steering, throttle
+ */
+Dynamics::Dynamics(const double& dt, 
+                    const int& model_type, 
+                    const int& RK4_dt_mult,
+                    const States& initial_states,
+                    const Inputs& initial_inputs)
 {
-    last_states_.setZero();
-    last_inputs_.setZero();
+    init(dt, model_type, RK4_dt_mult, initial_states, initial_inputs);
     std::cout << "Dynamics class initialized" << std::endl;
 }
 
-void Dynamics::forward(const States& states, const Inputs& inputs, States& states_der)
+Dynamics::~Dynamics()
+{}
+
+/**
+ * @brief Can manually initiailize variables with this function
+ */
+void Dynamics::init(const double& dt, const int& model_type, const int& RK4_dt_mult, const States& initial_states, const Inputs& initial_inputs)
 {
-    States states_der;
-    if(model_type_.type == SIMPLE_BICYCLE_MODEL)
+    dt_ = dt;
+    model_type_ = model_type;
+    RK4_dt_mult_ = RK4_dt_mult;
+    last_states_ = initial_states;
+    last_inputs_ = initial_inputs;
+    std::cout << "Dynamics class initialized" << std::endl;
+}
+
+/**
+ * @brief rollout for sim_time(sec) with constant inputs
+ */
+void Dynamics::rollout(const States& states, const Inputs& inputs, const double& sim_time, States& next_states)
+{
+    States _states = states;
+    last_states_ = states;
+    int num_steps = (int) sim_time / dt_;
+    for(int i = 0; i < num_steps; i++)
+    {
+        getNextState(_states, inputs, next_states);
+        _states = next_states;
+    }
+}
+
+/**
+ * @brief Compute state derivatives using current states and inputs (Continous)
+ */
+void Dynamics::getStatesDerivatives(const States& states, const Inputs& inputs, States& states_der)
+{
+    if(model_type_ == SIMPLE_BICYCLE_MODEL)
     {
         simpleBicycleModel(states, inputs, states_der);
+    }
+    else if(model_type_ == DYNAMIC_BICYCLE_MODEL)
+    {
+        dynamicBicycleModel(states, inputs, states_der);
     }
     else
     {
@@ -40,7 +96,58 @@ void Dynamics::forward(const States& states, const Inputs& inputs, States& state
 
     last_states_ = states;
     last_inputs_ = inputs;
+}
 
+/**
+ * @brief Compute next states using current states and inputs (Discrete)
+ */
+void Dynamics::getNextState(const States& states, const Inputs& inputs, States& next_states)
+{
+
+    if(RK4_dt_mult_ <= 0)
+    {
+        EulerMethod(states, inputs, next_states);
+    }
+    else
+    {
+        RK4(states, inputs, next_states);
+    }
+}
+
+void Dynamics::EulerMethod(const States& states, const Inputs& inputs, States& next_states)
+{
+    States states_der;
+    getStatesDerivatives(states, inputs, states_der);
+    next_states = states + states_der * dt_;
+}
+
+// Runge-Kutta 4th Order Integration Method
+void Dynamics::RK4(const States& states, const Inputs& inputs, States& next_states)
+{
+    if(RK4_dt_mult_ > 0)
+    {
+        double fine_dt = dt_ / RK4_dt_mult_;
+        States states_der, _states = states;
+        States k1, k2, k3, k4;
+        for(int i = 0; i < RK4_dt_mult_; i++)
+        {
+            getStatesDerivatives(_states, inputs, k1);
+            getStatesDerivatives(_states + k1 * (fine_dt / 2.0), inputs, k2);
+            getStatesDerivatives(_states + k2 * (fine_dt / 2.0), inputs, k3);
+            getStatesDerivatives(_states + k3 * (fine_dt), inputs, k4);
+            _states = _states + (k1 / 6.0 + k2 / 3.0 + k3 / 3.0 + k4 / 6.0) * fine_dt;
+        }
+        next_states = _states;
+    }
+    else
+    {
+        std::cout << "Set proper RK4_dt_mult and try again." << std::endl;
+    }
+}
+
+double Dynamics::getdt()
+{
+    return dt_;
 }
 
 /**
@@ -78,7 +185,7 @@ void Dynamics::simpleBicycleModel(const States &states, const Inputs &inputs, St
 }
 
 /**
- * @brief Assuming the body frame origin(x,y) at the rear axis center
+ * @brief Assuming the body frame origin(x,y) at the center of the mass
  */
 void Dynamics::dynamicBicycleModel(const States &states, const Inputs &inputs, States &states_der)
 {
@@ -117,6 +224,12 @@ void Dynamics::dynamicBicycleModel(const States &states, const Inputs &inputs, S
 
 }
 
+void Dynamics::pacejkaTireModel(const double &alpha_f, const double &alpha_r, double &F_fy, double &F_ry)
+{
+    F_fy = Df * sin(Cf * atan(Bf * alpha_f));
+    F_ry = Dr * sin(Cr * atan(Br * alpha_r));
+}
+
 void Dynamics::motorModel(const States &states, const Inputs &inputs, double &F_rx)
 {
     double ux = states.ux;
@@ -124,7 +237,8 @@ void Dynamics::motorModel(const States &states, const Inputs &inputs, double &F_
     
     int sign_ux = ux >= 0 ? 1 : -1;
 
-    // Rear wheel body x-direction force
+    // Rear wheel body x-direction force.
+    // Using sign of body frame velocity ux for forward and backward movement.
     F_rx = (Cm1 - Cm2 * abs(ux)) * throttle - (Cr0 + Cr2 * ux * ux) * sign_ux;
 }
 
@@ -141,4 +255,22 @@ void Dynamics::global2local(double x, double y, double yaw, double& x_l, double&
     y_l = sin(-yaw) * x + cos(-yaw) * y; 
 }
 
+}
+
+int main()
+{
+    /** Pseudo code **/
+
+    // dynamics = Dynamics(dynamics_dt, SIMPLE_BICYCLE_MODEL, 10);
+    // States next_states, states = getState(); // real current states
+    // Inputs inputs;
+    // while(!rollout_done)
+    // {
+    //     sim_time = frenet_dt;
+    //     inputs = getControlInputs(states, path);
+    //     dynamics.rollout(states, inputs, sim_time, next_states);
+    //     states = next_states;
+    //     rollout_done = done(state, path) ? true : false;
+    // }
+    // final_states = next_states
 }

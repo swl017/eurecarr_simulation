@@ -14,62 +14,6 @@ namespace eurecarr {
     const int SIMPLE_BICYCLE_MODEL  = 1;
     const int DYNAMIC_BICYCLE_MODEL = 2;
 
-    struct FullState
-    {
-        // xyz position
-        double x;
-        double y;
-        double z;
-        // rpy Euler angles
-        double roll;
-        double pitch;
-        double yaw;
-        // quaternions
-        double qx;
-        double qy;
-        double qz;
-        double qw;
-        // xyz velocity
-        double xdot;
-        double ydot;
-        double zdot;
-        // body frame velocity
-        double ux;
-        double uy;
-        double uz;
-        // rpy Euler angle rate
-        double rolldot;
-        double pitchdot;
-        double yawdot;
-        // current command
-        double steering;
-        double throttle;
-
-        void setZero() {
-            x = 0.0;
-            y = 0.0;
-            z = 0.0;
-            roll = 0.0;
-            pitch = 0.0;
-            yaw = 0.0;
-            qx = 0.0;
-            qy = 0.0;
-            qz = 0.0;
-            qw = 1.0;
-            xdot = 0.0;
-            ydot = 0.0;
-            zdot = 0.0;
-            ux = 0.0;
-            uy = 0.0;
-            uz = 0.0;
-            rolldot = 0.0;
-            pitchdot = 0.0;
-            yawdot = 0.0;
-            steering = 0.0;
-            throttle = 0.0;
-        }
-    };
-
     struct States
     {
         // xyz position
@@ -77,11 +21,6 @@ namespace eurecarr {
         double y;
         // rpy Euler angles
         double yaw;
-        // quaternions
-        double qx;
-        double qy;
-        double qz;
-        double qw;
         // xyz velocity
         double xdot;
         double ydot;
@@ -90,15 +29,15 @@ namespace eurecarr {
         double uy;
         // rpy Euler angle rate
         double yawdot;
+        
+        const States operator+(const States &other) const;
+        const States operator*(const double &dt) const;
+        const States operator/(const double &num) const;
 
         void setZero() {
             x = 0.0;
             y = 0.0;
             yaw = 0.0;
-            qx = 0.0;
-            qy = 0.0;
-            qz = 0.0;
-            qw = 1.0;
             xdot = 0.0;
             ydot = 0.0;
             ux = 0.0;
@@ -106,6 +45,51 @@ namespace eurecarr {
             yawdot = 0.0;
         }
     }; // Car
+
+    const States States::operator+( const States &other ) const
+    {
+        States result = *this;
+        result.x += other.x;
+        result.y += other.y;
+        result.yaw += other.yaw;
+        result.xdot += other.xdot;
+        result.ydot += other.ydot;
+        result.ux += other.ux;
+        result.uy += other.uy;
+        result.yawdot += other.yawdot;
+
+        return result;
+    }
+
+    const States States::operator*( const double &dt ) const
+    {
+        States result = *this;
+        result.x *= dt;
+        result.y *= dt;
+        result.yaw *= dt;
+        result.xdot *= dt;
+        result.ydot *= dt;
+        result.ux *= dt;
+        result.uy *= dt;
+        result.yawdot *= dt;
+
+        return result;
+    }
+
+    const States States::operator/( const double &num ) const
+    {
+        States result = *this;
+        result.x /= num;
+        result.y /= num;
+        result.yaw /= num;
+        result.xdot /= num;
+        result.ydot /= num;
+        result.ux /= num;
+        result.uy /= num;
+        result.yawdot /= num;
+
+        return result;
+    }
 
     struct Inputs
     {
@@ -118,12 +102,6 @@ namespace eurecarr {
             throttle = 0.0;
         }
     }; // Car
-
-    struct ModelType
-    {
-        // @todo Move model type constants here
-        int type;
-    };
 }
 
 #endif // ES_TYPE_DEF_H_
